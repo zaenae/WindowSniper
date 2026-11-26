@@ -1,0 +1,242 @@
+const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen, globalShortcut, systemPreferences, shell } = require('electron');
+const path = require('path');
+const fs = require('fs');
+const { findWindowAt, closeTarget, canClose } = require('./targets');
+const autostart = require('./autostart');
+
+const LOG_FILE = app.isPackaged ? path.join(app.getPath('userData'), 'windowsniper.log') : path.join(__dirname, 'windowsniper.log');
+function log(...args) {
+  const line = `${new Date().toISOString()} ${args.map(a => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')}\n`;
+  try {
+    if (fs.existsSync(LOG_FILE) && fs.statSync(LOG_FILE).size > 256 * 1024) fs.writeFileSync(LOG_FILE, '');
+    fs.appendFileSync(LOG_FILE, line);
+  } catch {  }
+  console.log(line.trimEnd());
+}
+process.on('uncaughtException', err => log('uncaught:', err.stack || String(err)));
+
+const health = new Map();
+const windowKey = t => [t.pid, t.handle ?? '', ...['x', 'y', 'width', 'height'].map(k => Math.round(t.bounds[k]))].join(':');
+
+const AX_HELP = 'macOS blocked it. Open System Settings → Privacy & Security → Accessibility, '
+  + `turn ON “${app.isPackaged ? app.getName() : 'Electron'}”, then shoot again.`;
+let lastAxPrompt = 0;
+function ensureAccessibility() {
+  if (canClose()) return true;
+  if (Date.now() - lastAxPrompt > 20000) {
+    lastAxPrompt = Date.now();
+    systemPreferences.isTrustedAccessibilityClient(true);
+    shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
+  }
+  return false;
+}
+
+const HOTKEY = 'CommandOrControl+Alt+G';
+const CLOSE_DELAY_MS = 450;
+const HEADSHOT_PX = 36;
+const MAX_HP = 100;
+const BODY_DAMAGE = 34;
+const HEAD_DAMAGE = 50;
+const HEAL_AFTER_MS = 20000;
+
+let tray = null;
+let overlay = null;
+let overlayReady = false;
+let spawnQueued = false;
+
+if (!app.requestSingleInstanceLock()) app.quit();
+
+function createOverlay() {
+  overlay = new BrowserWindow({
+    show: false,
+    transparent: true,
+    frame: false,
+    alwaysOnTop: true,
+    focusable: false,
+    skipTaskbar: true,
+    resizable: false,
+    hasShadow: false,
+    enableLargerThanScreen: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      autoplayPolicy: 'no-user-gesture-required',
+    },
+  });
+  overlay.setAlwaysOnTop(true, 'screen-saver');
+  if (process.platform === 'darwin') {
+    overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  }
+  overlayReady = false;
+  overlay.loadFile(path.join(__dirname, 'gun.html'));
+  overlay.webContents.on('did-finish-load', () => {
+    overlayReady = true;
+    if (spawnQueued) {
+      spawnQueued = false;
+      overlay.webContents.send('spawn-gun');
+    }
+  });
+  overlay.on('closed', () => { overlay = null; overlayReady = false; });
+}
+
+function isOut() {
+  return !!overlay && overlay.isVisible();
+}
+
+function drawGun() {
+  if (!overlay) createOverlay();
+
+  const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  overlay.setBounds(display.bounds);
+  overlay.showInactive();
+  globalShortcut.register('Escape', holsterGun);
+  if (overlayReady) overlay.webContents.send('spawn-gun');
+  else spawnQueued = true;
+}
+
+function holsterGun() {
+  if (isOut()) overlay.webContents.send('holster-gun');
+}
+
+function toggleGun() {
+  if (isOut()) holsterGun();
+  else drawGun();
+}
+
+ipcMain.on('hide-overlay', () => {
+  if (overlay) overlay.hide();
+  globalShortcut.unregister('Escape');
+});
+
+function ownWindows() {
+  const pids = new Set([process.pid, ...app.getAppMetrics().map(m => m.pid)]);
+  const windows = new Set();
+  for (const w of BrowserWindow.getAllWindows()) {
+    const buf = w.getNativeWindowHandle();
+    windows.add(Number(buf.length >= 8 ? buf.readBigUInt64LE(0) : buf.readUInt32LE(0)));
+  }
+  return { pids, windows };
+}
+
+function dipToNative(p) {
+  if (process.platform === 'win32') return screen.dipToScreenPoint(p);
+  if (process.platform === 'linux') {
+    const s = screen.getDisplayNearestPoint(p).scaleFactor || 1;
+    return { x: Math.round(p.x * s), y: Math.round(p.y * s) };
+  }
+  return p;
+}
+
+function nativeRectToDip(r, nearDip) {
+  if (process.platform === 'win32') return screen.screenToDipRect(null, r);
+  if (process.platform === 'linux') {
+    const s = screen.getDisplayNearestPoint(nearDip).scaleFactor || 1;
+    return { x: r.x / s, y: r.y / s, width: r.width / s, height: r.height / s };
+  }
+  return r;
+}
+
+ipcMain.handle('gun-shoot', async (e, { x, y }) => {
+  if (!overlay) return { hit: false };
+  const ob = overlay.getBounds();
+  const ptDip = { x: Math.round(ob.x + x), y: Math.round(ob.y + y) };
+  if (!ensureAccessibility()) {
+    log(AX_HELP);
+    return { hit: false };
+  }
+  let target;
+  try {
+    target = await findWindowAt(dipToNative(ptDip), ownWindows());
+  } catch (err) {
+    log('find failed:', err?.stack || String(err));
+    return { hit: false };
+  }
+  log('shot', ptDip, '->', target ? { name: target.name, pid: target.pid, bounds: target.bounds } : 'miss');
+  if (!target) return { hit: false };
+
+  const b = nativeRectToDip(target.bounds, ptDip);
+  const headshot = ptDip.y - b.y < HEADSHOT_PX;
+
+  const key = windowKey(target), now = Date.now();
+  let hp = health.get(key);
+  if (!hp || now - hp.last > HEAL_AFTER_MS) hp = { hp: MAX_HP };
+  hp.hp -= headshot ? HEAD_DAMAGE : BODY_DAMAGE;
+  hp.last = now;
+  const killed = hp.hp <= 0;
+  if (killed) health.delete(key); else health.set(key, hp);
+  for (const [k, v] of health) if (now - v.last > HEAL_AFTER_MS) health.delete(k);
+  log(killed ? 'killed' : 'hit', target.name, { hp: Math.max(0, hp.hp), headshot });
+
+  if (killed) setTimeout(async () => {
+    try {
+      const how = await closeTarget(target, headshot);
+      log('closed', target.name, how || '');
+    } catch (err) {
+      log('close failed:', target.name, err?.stack || String(err));
+    }
+  }, CLOSE_DELAY_MS);
+
+  return {
+    hit: true,
+    killed,
+    headshot,
+    hp: Math.max(0, hp.hp),
+    maxHp: MAX_HP,
+    name: target.name,
+    bounds: { x: b.x - ob.x, y: b.y - ob.y, width: b.width, height: b.height },
+  };
+});
+
+function trayIcon() {
+  if (process.platform === 'darwin') {
+    const img = nativeImage.createFromPath(path.join(__dirname, 'icon', 'trayTemplate.png'));
+    img.setTemplateImage(true);
+    return img;
+  }
+  return nativeImage.createFromPath(path.join(__dirname, 'icon', 'tray-light.png'));
+}
+
+const prettyHotkey = HOTKEY
+  .replace('CommandOrControl', process.platform === 'darwin' ? '⌘' : 'Ctrl')
+  .replace('Alt', process.platform === 'darwin' ? '⌥' : 'Alt')
+  .replace(/\+/g, process.platform === 'darwin' ? '' : '+');
+
+app.whenReady().then(() => {
+  if (process.platform === 'darwin' && app.dock) app.dock.hide();
+
+  tray = new Tray(trayIcon());
+  tray.setToolTip(`WindowSniper – click or ${prettyHotkey} to draw`);
+  const buildMenu = () => Menu.buildFromTemplate([
+    { label: `Draw / holster  (${prettyHotkey})`, click: toggleGun },
+    { type: 'separator' },
+    {
+      label: 'Start at login', type: 'checkbox', checked: autostart.isEnabled(),
+      click: item => {
+        try { autostart.setEnabled(item.checked); log('start at login:', item.checked); }
+        catch (err) { log('start at login failed:', err?.message || String(err)); }
+        if (process.platform === 'linux') tray.setContextMenu(buildMenu());
+      },
+    },
+    { type: 'separator' },
+    { label: 'Quit WindowSniper', click: () => app.quit() },
+  ]);
+  if (process.platform === 'linux') {
+    tray.setContextMenu(buildMenu());
+  } else {
+    tray.on('click', toggleGun);
+    tray.on('right-click', () => tray.popUpContextMenu(buildMenu()));
+  }
+
+  if (!globalShortcut.register(HOTKEY, toggleGun)) {
+    console.warn(`windowsniper: could not register ${HOTKEY} (another app owns it)`);
+  }
+  log('WindowSniper started', { platform: process.platform, electron: process.versions.electron });
+  if (process.platform === 'darwin' && !canClose()) {
+    systemPreferences.isTrustedAccessibilityClient(true);
+  }
+  createOverlay();
+  if (process.argv.includes('--draw')) drawGun();
+});
+
+app.on('second-instance', toggleGun);
+app.on('will-quit', () => globalShortcut.unregisterAll());
+app.on('window-all-closed', e => e.preventDefault());

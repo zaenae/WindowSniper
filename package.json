@@ -1,0 +1,151 @@
+{
+  "name": "windowsniper",
+  "version": "0.1.0",
+  "description": "A 3D .50 hand-cannon on your desktop. Shoot a window to close it.",
+  "license": "MIT",
+  "main": "main.js",
+  "bin": {
+    "windowsniper": "bin/windowsniper.js"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "electron .",
+    "draw": "electron . --draw",
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "dist:linux": "electron-builder --linux"
+  },
+  "files": [
+    "main.js",
+    "preload.js",
+    "gun.html",
+    "gun-model.js",
+    "targets.js",
+    "icon",
+    "bin",
+    "WindowSniper.command",
+    "README.md",
+    "fonts",
+    "hand-sdf.js",
+    "hand-worker.js",
+    "WindowSniper.cmd",
+    "tools",
+    "install.sh",
+    "install.ps1",
+    "autostart.js"
+  ],
+  "dependencies": {
+    "@fontsource/anton": "^5.3.0",
+    "koffi": "^2.9.0",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "homepage": "https://github.com/zaenae/WindowSniper#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zaenae/WindowSniper.git"
+  },
+  "author": "zaenae",
+  "build": {
+    "appId": "io.github.zaenae.windowsniper",
+    "productName": "WindowSniper",
+    "files": [
+      "autostart.js",
+      "main.js",
+      "preload.js",
+      "gun.html",
+      "gun-model.js",
+      "hand-sdf.js",
+      "hand-worker.js",
+      "targets.js",
+      "icon/**",
+      "fonts/**",
+      "vendor/**"
+    ],
+    "asarUnpack": [
+      "node_modules/koffi/**"
+    ],
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "category": "public.app-category.entertainment",
+      "icon": "icon/icon.png",
+      "extendInfo": {
+        "LSUIElement": true,
+        "NSAppleEventsUsageDescription": "WindowSniper closes the windows you shoot."
+      }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "shortcutName": "WindowSniper"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "tar.gz",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Game",
+      "icon": "icon/icon.png"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "zaenae",
+      "repo": "WindowSniper",
+      "releaseType": "release"
+    }
+  }
+}
