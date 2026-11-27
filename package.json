@@ -74,7 +74,7 @@
     "asarUnpack": [
       "node_modules/koffi/**"
     ],
-    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "artifactName": "${productName}-${os}-${arch}.${ext}",
     "mac": {
       "target": [
         {

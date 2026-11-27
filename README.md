@@ -14,18 +14,25 @@
 
 ## Install
 
+**Mac / Linux**: paste this into Terminal. Nothing else needed.
+
 ```bash
-npm install -g github:zaenae/WindowSniper
-windowsniper
+curl -fsSL https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.sh | bash
 ```
 
-Needs [Node.js](https://nodejs.org) 18 or newer. Works on Mac (10.15+), Windows and Linux.
-
-No Node? Grab the app from [**Releases**](https://github.com/zaenae/WindowSniper/releases).
+**Windows**: [**download the installer**](https://github.com/zaenae/WindowSniper/releases/latest/download/WindowSniper-win-x64.exe) and run it.
 
 <p align="center">
-  <img src="docs/installer.png" alt="Installing and starting WindowSniper" width="620">
+  <img src="docs/installer.png" alt="Installing WindowSniper with one command" width="620">
 </p>
+
+<details>
+<summary><b>Other ways to install</b></summary>
+
+- **Mac app:** [Apple chip (M1–M4)](https://github.com/zaenae/WindowSniper/releases/latest/download/WindowSniper-mac-arm64.dmg) · [Intel](https://github.com/zaenae/WindowSniper/releases/latest/download/WindowSniper-mac-x64.dmg)
+- **Linux app:** [AppImage](https://github.com/zaenae/WindowSniper/releases/latest/download/WindowSniper-linux-x86_64.AppImage)
+- **Already have Node.js?** `npm install -g github:zaenae/WindowSniper`, then run `windowsniper`
+</details>
 
 ## Play
 
@@ -46,7 +53,7 @@ It isn't, it's just not signed by Apple. Drag it into Applications, then run thi
 xattr -cr /Applications/WindowSniper.app
 ```
 
-Pick `mac-arm64` for M1–M4 Macs, `mac-x64` for older Intel ones.
+Pick the Apple chip version for M1–M4 Macs, Intel for older ones.
 </details>
 
 <details>
@@ -61,7 +68,7 @@ Pick `mac-arm64` for M1–M4 Macs, `mac-x64` for older Intel ones.
 <summary><b>More</b></summary>
 
 - **Start at login / Quit:** right-click the crosshair in your menu bar or tray.
-- **Uninstall:** `npm uninstall -g windowsniper`, or drag the app to the Trash.
+- **Uninstall:** delete `~/WindowSniper` (Mac/Linux one-liner), uninstall it from Settings → Apps (Windows), drag the app to the Trash (Mac app), or `npm uninstall -g windowsniper` (npm).
 - **Tweak it:** gun feel at the top of `gun.html`, health and hotkey at the top of `main.js`.
 </details>
 
