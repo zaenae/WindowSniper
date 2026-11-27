@@ -14,20 +14,17 @@
 
 ## Install
 
-**Mac / Linux** (Terminal, macOS 10.15 or newer)
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.sh | bash
+npm install -g github:zaenae/WindowSniper
+windowsniper
 ```
 
-**Windows** (PowerShell)
-```powershell
-irm https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.ps1 | iex
-```
+Needs [Node.js](https://nodejs.org) 18 or newer. Works on Mac (10.15+), Windows and Linux.
 
-Or grab the app from [**Releases**](https://github.com/zaenae/WindowSniper/releases).
+No Node? Grab the app from [**Releases**](https://github.com/zaenae/WindowSniper/releases).
 
 <p align="center">
-  <img src="docs/installer.png" alt="The installer" width="560">
+  <img src="docs/installer.png" alt="Installing and starting WindowSniper" width="620">
 </p>
 
 ## Play
@@ -64,7 +61,7 @@ Pick `mac-arm64` for M1–M4 Macs, `mac-x64` for older Intel ones.
 <summary><b>More</b></summary>
 
 - **Start at login / Quit:** right-click the crosshair in your menu bar or tray.
-- **Uninstall:** delete `~/WindowSniper` (Mac/Linux), `%LOCALAPPDATA%\WindowSniper` (Windows), or drag the app to the Trash.
+- **Uninstall:** `npm uninstall -g windowsniper`, or drag the app to the Trash.
 - **Tweak it:** gun feel at the top of `gun.html`, health and hotkey at the top of `main.js`.
 </details>
 
