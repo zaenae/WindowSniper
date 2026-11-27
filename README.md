@@ -24,7 +24,9 @@ curl -fsSL https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.sh
 irm https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.ps1 | iex
 ```
 
-One line, nothing else needed.
+One line, nothing else needed. Run it again any time to update.
+
+Next time, start it with `windowsniper` in a new terminal (Mac/Linux) or from the Start menu (Windows).
 
 <p align="center">
   <img src="docs/installer.png" alt="Installing WindowSniper with one command" width="620">
@@ -36,22 +38,24 @@ One line, nothing else needed.
 |---|---|
 | **Ctrl+Alt+G** (Mac: **⌘⌥G**) | Pull out the gun |
 | **Click** | Shoot |
-| **Esc** | Put it away |
+| **Esc** or **right-click** | Put it away |
 
-3 shots kill a window. Shoot the title bar for a headshot.
+3 shots kill a window. Shoot its title bar instead and 2 headshots quit the whole app. Leave a window alone for 20 seconds and it heals.
 
 <details>
 <summary><b>Shots don't close anything?</b></summary>
 
-- **Mac:** allow it in System Settings → Privacy & Security → Accessibility.
-- **Linux:** needs X11 and `sudo apt install x11-utils wmctrl xdotool`.
+- **Mac:** turn on **Electron** in System Settings → Privacy & Security → Accessibility (on older Macs: System Preferences → Security & Privacy → Privacy → Accessibility). Then quit WindowSniper and start it again.
+- **Linux:** needs an X11 session (not Wayland) and `sudo apt install x11-utils wmctrl xdotool`.
+- **Still nothing?** The log is `windowsniper.log` in the WindowSniper folder.
 </details>
 
 <details>
 <summary><b>More</b></summary>
 
 - **Start at login / Quit:** right-click the crosshair in your menu bar or tray.
-- **Uninstall:** delete `~/WindowSniper` (Mac/Linux) or `%LOCALAPPDATA%\WindowSniper` (Windows).
+- **Uninstall:** untick Start at login, quit, then delete `~/WindowSniper` and the `windowsniper` line in `~/.zshrc` or `~/.bashrc` (Mac/Linux), or `%LOCALAPPDATA%\WindowSniper` and the Start menu shortcut (Windows).
+- **Needs:** macOS 10.15 or newer, Windows 10 or newer, or Linux with X11.
 - **Tweak it:** gun feel at the top of `gun.html`, health and hotkey at the top of `main.js`.
 </details>
 
