@@ -122,15 +122,18 @@ function run(argv) {
   const own = String(argv[2]).split(',').map(Number);
   const systemUI = ${JSON.stringify(MAC_SYSTEM_UI)};
   const list = ObjC.deepUnwrap(ObjC.castRefToObject($.CGWindowListCopyWindowInfo(1 | 16, 0))) || [];
+  const seen = {};
   for (const w of list) {
     const b = w.kCGWindowBounds;
     if (!b || b.Width < ${MIN_SIZE} || b.Height < ${MIN_SIZE}) continue;
+    const before = seen[w.kCGWindowOwnerPID] || 0;
+    if (w.kCGWindowLayer === 0) seen[w.kCGWindowOwnerPID] = before + 1;
     if (px < b.X || px >= b.X + b.Width || py < b.Y || py >= b.Y + b.Height) continue;
     if (own.indexOf(w.kCGWindowOwnerPID) !== -1) continue;
     if (w.kCGWindowAlpha !== undefined && w.kCGWindowAlpha < 0.05) continue;
     if (systemUI.indexOf(w.kCGWindowOwnerName) !== -1) return '';
     if (w.kCGWindowLayer !== 0) continue;
-    return JSON.stringify({ pid: w.kCGWindowOwnerPID, name: w.kCGWindowOwnerName || 'window',
+    return JSON.stringify({ pid: w.kCGWindowOwnerPID, name: w.kCGWindowOwnerName || 'window', index: before,
       x: b.X, y: b.Y, width: b.Width, height: b.Height });
   }
   return '';
@@ -143,7 +146,40 @@ async function findMac(pt, own) {
   ])).trim();
   if (!out) return null;
   const w = JSON.parse(out);
-  return { handle: null, pid: w.pid, name: w.name, bounds: { x: w.x, y: w.y, width: w.width, height: w.height } };
+  return { handle: null, pid: w.pid, name: w.name, index: w.index, bounds: { x: w.x, y: w.y, width: w.width, height: w.height } };
+}
+
+const MAC_CLOSE = `
+ObjC.import('AppKit');
+ObjC.import('ApplicationServices');
+function run(argv) {
+  var pid = Number(argv[0]), quit = argv[1] === 'quit', index = Number(argv[2]) || 0;
+  if (quit) {
+    var ra = $.NSRunningApplication.runningApplicationWithProcessIdentifier(pid);
+    if (ra && !ra.isNil()) { ra.terminate; return 'quit'; }
+  }
+  if (!$.AXIsProcessTrusted()) throw new Error('Accessibility permission not granted');
+  var app = $.AXUIElementCreateApplication(pid);
+  $.AXUIElementSetMessagingTimeout(app, 1.5);
+  function get(el, name) {
+    var r = Ref();
+    var err = $.AXUIElementCopyAttributeValue(el, $(name), r);
+    if (err !== 0) throw new Error('AX ' + name + ' error ' + err);
+    return r[0];
+  }
+  var wins = ObjC.castRefToObject(get(app, 'AXWindows'));
+  var n = wins.count;
+  var pick = index < n ? index : (n === 1 ? 0 : -1);
+  if (pick < 0) throw new Error('no matching window found (app has ' + n + ')');
+  var btn = get(wins.objectAtIndex(pick), 'AXCloseButton');
+  var err = $.AXUIElementPerformAction(btn, $('AXPress'));
+  if (err !== 0) throw new Error('AXPress error ' + err);
+  return 'closed';
+}`;
+
+async function closeMacScript(target, quitApp) {
+  const out = await run('osascript', ['-l', 'JavaScript', '-e', MAC_CLOSE, String(target.pid), quitApp ? 'quit' : 'close', String(target.index || 0)]);
+  return out.trim();
 }
 
 let ax = null;
@@ -233,7 +269,8 @@ function axQuitViaMenu(api, appEl) {
 }
 
 function closeMac(target, quitApp) {
-  const api = macAx();
+  let api;
+  try { api = macAx(); } catch { return closeMacScript(target, quitApp); }
   if (!api.AXIsProcessTrusted()) throw new Error('Accessibility permission not granted');
   const appEl = api.AXUIElementCreateApplication(target.pid);
   try {
@@ -321,7 +358,7 @@ async function closeTarget(target, quitApp = false) {
 
 function canClose() {
   if (process.platform !== 'darwin') return true;
-  try { return macAx().AXIsProcessTrusted(); } catch { return false; }
+  try { return require('electron').systemPreferences.isTrustedAccessibilityClient(false); } catch { return true; }
 }
 
 module.exports = { findWindowAt, closeTarget, canClose };
