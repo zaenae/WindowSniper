@@ -26,7 +26,7 @@ irm https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.ps1 | iex
 
 One line installs everything, Node.js included. Run it again any time to update.
 
-If it asks for a permission or your password, say yes. That's what lets it close windows.
+On Mac, click **Open Settings** when asked and turn on **Electron** (the engine WindowSniper runs on). On Linux, enter your password if asked. Windows needs nothing.
 
 Next time, start it with `windowsniper` in a new terminal (Mac/Linux) or from the Start menu (Windows).
 
@@ -48,9 +48,25 @@ Next time, start it with `windowsniper` in a new terminal (Mac/Linux) or from th
 <summary><b>More</b></summary>
 
 - **Start at login / Quit:** right-click the crosshair in your menu bar or tray.
-- **Shots still don't close anything?** Check `windowsniper.log` in the WindowSniper folder.
-- **Uninstall:** untick Start at login, quit, then delete `~/WindowSniper` and the `windowsniper` line in `~/.zshrc` or `~/.bashrc` (Mac/Linux), or `%LOCALAPPDATA%\WindowSniper` and the Start menu shortcut (Windows).
+- **Shots don't close anything?** On Mac, check that **Electron** is on in System Settings → Privacy & Security → Accessibility. Still stuck? Look at `windowsniper.log` in the WindowSniper folder.
 - **Tweak it:** gun feel at the top of `gun.html`, health and hotkey at the top of `main.js`.
+
+**Uninstall**
+
+Mac
+```bash
+pkill -f "$HOME/WindowSniper"; launchctl remove io.github.zaenae.windowsniper 2>/dev/null; rm -rf ~/WindowSniper ~/Library/LaunchAgents/io.github.zaenae.windowsniper.plist ~/Library/Application\ Support/windowsniper ~/Library/Caches/electron; sed -i '' '/# WindowSniper/d;/alias windowsniper=/d' ~/.zshrc ~/.bashrc 2>/dev/null; tccutil reset Accessibility com.github.Electron
+```
+
+Linux
+```bash
+pkill -f "$HOME/WindowSniper"; rm -rf ~/WindowSniper ~/.config/autostart/windowsniper.desktop ~/.config/windowsniper ~/.cache/electron; sed -i '/# WindowSniper/d;/alias windowsniper=/d' ~/.zshrc ~/.bashrc 2>/dev/null
+```
+
+Windows
+```powershell
+Get-Process electron -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '*WindowSniper*' } | Stop-Process -Force; $k = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'; (Get-ItemProperty $k).PSObject.Properties | Where-Object { "$($_.Value)" -like '*WindowSniper*' } | ForEach-Object { Remove-ItemProperty $k $_.Name }; Remove-Item "$env:LOCALAPPDATA\WindowSniper", "$env:APPDATA\windowsniper", "$([Environment]::GetFolderPath('Programs'))\WindowSniper.lnk" -Recurse -Force -ErrorAction SilentlyContinue
+```
 </details>
 
 ---
