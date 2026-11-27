@@ -24,7 +24,7 @@ curl -fsSL https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.sh
 irm https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.ps1 | iex
 ```
 
-One line, nothing else needed. Run it again any time to update.
+One line installs everything, Node.js included. Run it again any time to update.
 
 **One more step so shots can close windows:**
 - **Mac:** turn on **Electron** in System Settings → Privacy & Security → Accessibility (older Macs: System Preferences → Security & Privacy → Privacy → Accessibility), then restart WindowSniper.
