@@ -55,7 +55,7 @@ WindowSniper waits quietly in the background. Press the shortcut anytime, in any
 
 - **Start at login / Quit:** right-click the crosshair in your menu bar or tray.
 - **Shots don't close anything?** On Mac, check that **Electron** is on in System Settings → Privacy & Security → Accessibility. On Ubuntu / GNOME, log out and back in once. Still stuck? Look at `windowsniper.log` in the WindowSniper folder.
-- **Prefer a regular app?** Grab one from [Releases](https://github.com/zaenae/WindowSniper/releases/latest): `.dmg` (Mac), `.exe` (Windows), `.deb` or `.rpm` (Linux). If macOS says it's damaged, run `xattr -cr /Applications/WindowSniper.app`.
+- **Prefer a regular app?** Grab one from [Releases](https://github.com/zaenae/WindowSniper/releases/latest): `.dmg` (Mac), `.exe` (Windows), `.deb` (Ubuntu / Debian). If macOS says it's damaged, run `xattr -cr /Applications/WindowSniper.app`.
 - **Tweak it:** gun feel at the top of `gun.html`, health and hotkey at the top of `main.js`.
 
 **Uninstall**

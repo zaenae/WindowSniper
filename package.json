@@ -139,12 +139,6 @@
           "arch": [
             "x64"
           ]
-        },
-        {
-          "target": "rpm",
-          "arch": [
-            "x64"
-          ]
         }
       ],
       "category": "Game",
@@ -175,10 +169,6 @@
         "x11-utils",
         "wmctrl"
       ],
-      "afterInstall": "linux/after-install.sh",
-      "afterRemove": "linux/after-remove.sh"
-    },
-    "rpm": {
       "afterInstall": "linux/after-install.sh",
       "afterRemove": "linux/after-remove.sh"
     }
