@@ -1,6 +1,6 @@
 {
   "name": "windowsniper",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Shoot a window. It closes. A GTA-style pistol for your desktop.",
   "license": "MIT",
   "main": "main.js",

@@ -78,12 +78,23 @@ const fx = fxCanvas.getContext('2d');
 const hud = hudCanvas.getContext('2d');
 let W = innerWidth, H = innerHeight, DPR = devicePixelRatio || 1;
 
-const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, alpha: true, antialias: true });
+const QUALITY = [
+  { scale: 1, maxDpr: 1.5, shadow: 2048, soft: true, rich: true, handStep: 1.4 },
+  { scale: 0.75, maxDpr: 1.5, shadow: 1024, soft: false, rich: true, handStep: 2 },
+  { scale: 0.6, maxDpr: 1, shadow: 0, soft: false, rich: false, handStep: 2.6 },
+];
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+const weakMachine = (navigator.deviceMemory || 8) <= 4 || (navigator.hardwareConcurrency || 8) <= 4;
+let quality = clamp(Number(store.get('quality') ?? (weakMachine ? 1 : 0)) || 0, 0, QUALITY.length - 1);
+let qualityLocked = false;
+
+const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, alpha: true, antialias: quality === 0, powerPreference: 'high-performance' });
 renderer.setClearColor(0x000000, 0);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.1;
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(G.fov, W / H, 0.01, 100);
@@ -94,7 +105,6 @@ scene.add(new THREE.HemisphereLight(0xdfe7f2, 0x2e261f, 0.35));
 
 const keyLight = new THREE.DirectionalLight(0xfff0dc, 3.4);
 keyLight.castShadow = true;
-keyLight.shadow.mapSize.set(2048, 2048);
 Object.assign(keyLight.shadow.camera, { left: -0.9, right: 0.9, top: 0.9, bottom: -0.9, near: 0.1, far: 10 });
 keyLight.shadow.bias = -0.0004;
 keyLight.shadow.normalBias = 0.006;
@@ -108,20 +118,45 @@ const rimLight = new THREE.DirectionalLight(0xa8c8ff, 1.6);
 rimLight.position.set(3, 1.5, -4);
 scene.add(rimLight);
 
+let fxDirty = true;
 function resize() {
   W = innerWidth; H = innerHeight; DPR = devicePixelRatio || 1;
-  for (const c of [fxCanvas, hudCanvas]) {
-    c.width = Math.round(W * DPR);
-    c.height = Math.round(H * DPR);
-  }
-  fx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  hud.setTransform(DPR, 0, 0, DPR, 0, 0);
-  renderer.setPixelRatio(DPR);
+  const q = QUALITY[quality];
+  const fxDpr = Math.min(DPR, q.maxDpr), hudDpr = Math.min(DPR, 2);
+  fxCanvas.width = Math.round(W * fxDpr); fxCanvas.height = Math.round(H * fxDpr);
+  hudCanvas.width = Math.round(W * hudDpr); hudCanvas.height = Math.round(H * hudDpr);
+  fx.setTransform(fxDpr, 0, 0, fxDpr, 0, 0);
+  hud.setTransform(hudDpr, 0, 0, hudDpr, 0, 0);
+  renderer.setPixelRatio(Math.min(DPR, q.maxDpr) * q.scale);
   renderer.setSize(W, H, false);
   camera.aspect = W / H;
   camera.updateProjectionMatrix();
+  fxDirty = true;
 }
-resize();
+
+function applyQuality() {
+  const q = QUALITY[quality];
+  renderer.shadowMap.enabled = q.shadow > 0;
+  renderer.shadowMap.type = q.soft ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+  keyLight.castShadow = q.shadow > 0;
+  if (q.shadow) {
+    keyLight.shadow.mapSize.set(q.shadow, q.shadow);
+    keyLight.shadow.map?.dispose();
+    keyLight.shadow.map = null;
+  }
+  const materials = new Set(Object.values(gun.M).filter(m => m?.isMaterial));
+  scene.traverse(o => { if (o.isMesh) [].concat(o.material).forEach(m => materials.add(m)); });
+  for (const m of materials) {
+    if (m.isMeshPhysicalMaterial) {
+      m.userData.rich ??= { clearcoat: m.clearcoat, sheen: m.sheen };
+      m.clearcoat = q.rich ? m.userData.rich.clearcoat : 0;
+      m.sheen = q.rich ? m.userData.rich.sheen : 0;
+    }
+    m.needsUpdate = true;
+  }
+  gun.setHandStep(q.handStep);
+  resize();
+}
 addEventListener('resize', resize);
 
 function canvasTex(size, draw, srgb = true) {
@@ -182,7 +217,7 @@ const smokeTex = canvasTex(128, (x, s) => {
 function orientAlong(mesh, dir) {
   mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
 }
-const gun = buildGunModel();
+const gun = buildGunModel({ handStep: QUALITY[quality].handStep });
 gun.root.scale.setScalar(G.gunScale);
 const M = gun.M;
 const MM = gun.UNIT * G.gunScale;
@@ -190,6 +225,7 @@ const anchor = new THREE.Group();
 anchor.add(gun.root);
 scene.add(anchor);
 anchor.visible = false;
+applyQuality();
 
 const flash = new THREE.Group();
 flash.scale.setScalar(1.15 / gun.UNIT);
@@ -307,8 +343,16 @@ function spawnTracer(from, to) {
 }
 
 const sfx = (() => {
-  let ac = null, master, noise;
+  let ac = null, master, noise, lastUse = 0;
+  function reset() {
+    if (!ac) return;
+    const old = ac;
+    ac = null;
+    old.close().catch(() => {});
+  }
+  navigator.mediaDevices?.addEventListener?.('devicechange', reset);
   function ctx() {
+    lastUse = performance.now();
     if (!ac) {
       ac = new AudioContext();
       const comp = ac.createDynamicsCompressor();
@@ -350,6 +394,7 @@ const sfx = (() => {
   }
   const click = (at, f, gain = 0.6) => burst({ at, dur: 0.035, gain, type: 'bandpass', f0: f, q: 3 });
   return {
+    fresh() { if (performance.now() - lastUse > 2000) reset(); },
     shot() {
       burst({ dur: 0.08, gain: 1.6, type: 'highpass', f0: 2500, f1: 900 });
       burst({ dur: 0.4, gain: 1.3, f0: 5000, f1: 160 });
@@ -431,12 +476,13 @@ function basePosition(out) {
 }
 
 function spawn() {
+  sfx.fresh();
   state = 'drawing';
   anchor.visible = true;
   ammo = G.magSize;
   reloading = false; slideLocked = false; slideT = 0;
   gun.mag.position.copy(gun.magHome); gun.mag.visible = true;
-  holes.length = 0; hits.length = 0; chips.length = 0;
+  holes.length = 0; hits.length = 0; chips.length = 0; fxDirty = true;
   starFlashT = 0;
 
   basePosition(anchor.position);
@@ -739,6 +785,8 @@ function outlined(ctx, text, x, y, fill, lw = 4, stroke = 'rgba(0,0,0,0.9)') {
 }
 
 function drawFx(now) {
+  if (!fxDirty && !holes.length && !chips.length) return;
+  fxDirty = holes.length > 0 || chips.length > 0;
   fx.clearRect(0, 0, W, H);
   fx.fillStyle = `rgba(0,0,0,${G.bgAlpha})`;
   fx.fillRect(0, 0, W, H);
@@ -920,10 +968,29 @@ addEventListener('contextmenu', e => e.preventDefault());
 window.bridge.onSpawn(spawn);
 window.bridge.onHolster(holster);
 
-let last = performance.now();
+const FRAME_MS = 1000 / 61;
+let last = performance.now(), slowFor = 0, smoothFor = 0, drawnFor = 0;
+function adapt(dt) {
+  if (!anchor.visible) { drawnFor = 0; return; }
+  drawnFor += dt;
+  if (drawnFor < 1.5) return;
+  if (dt > 1 / 38) { slowFor += dt; smoothFor = 0; } else { slowFor = Math.max(0, slowFor - dt * 0.5); smoothFor += dt; }
+  if (slowFor > 2 && quality < QUALITY.length - 1) {
+    quality++; qualityLocked = true; slowFor = 0; smoothFor = 0;
+    store.set('quality', String(quality));
+    applyQuality();
+  } else if (smoothFor > 20 && quality > 1 && !qualityLocked) {
+    quality--; smoothFor = 0;
+    store.set('quality', String(quality));
+    applyQuality();
+  }
+}
+
 function frame(now) {
+  if (now - last < FRAME_MS) { requestAnimationFrame(frame); return; }
   const real = Math.min(0.25, (now - last) / 1000);
   last = now;
+  adapt(real);
   const steps = Math.max(1, Math.ceil(real / (1 / 60)));
   for (let i = 0; i < steps; i++) update(real / steps, now - (steps - 1 - i) * (real / steps) * 1000);
   if (anchor.visible || debris.length || puffs.length) renderer.render(scene, camera);

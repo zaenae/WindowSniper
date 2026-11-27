@@ -216,8 +216,6 @@ function buildPistol(M) {
   return { body, slide, mag, magHome: mag.position.clone(), magAxis: new THREE.Vector3(...GRIP.axis), muzzle, ejectPort, occluders };
 }
 
-const HAND_STEP = 1.4;
-const CACHE_KEY = `hand-v${HAND_VERSION}-${HAND_STEP}`;
 
 function idb(mode, fn) {
   return new Promise((resolve, reject) => {
@@ -233,9 +231,10 @@ function idb(mode, fn) {
   });
 }
 
-async function loadHandData(occluders, { cache = true } = {}) {
+async function loadHandData(occluders, { cache = true, step = 1.4 } = {}) {
+  const key = `hand-v${HAND_VERSION}-${step}`;
   if (cache) {
-    try { const hit = await idb('readonly', st => st.get(CACHE_KEY)); if (hit) return hit; } catch {  }
+    try { const hit = await idb('readonly', st => st.get(key)); if (hit) return hit; } catch {  }
   }
   let data;
   try {
@@ -243,14 +242,14 @@ async function loadHandData(occluders, { cache = true } = {}) {
       const w = new Worker(new URL('./hand-worker.js', import.meta.url), { type: 'module' });
       w.onmessage = e => { resolve(e.data); w.terminate(); };
       w.onerror = e => { reject(e); w.terminate(); };
-      w.postMessage({ grip: GRIP, occluders, step: HAND_STEP });
+      w.postMessage({ grip: GRIP, occluders, step });
     });
   } catch {
-    data = buildHandMesh(GRIP, occluders, { step: HAND_STEP });
+    data = buildHandMesh(GRIP, occluders, { step });
   }
   if (cache) {
     try {
-      await idb('readwrite', st => { st.clear(); return st.put(data, CACHE_KEY); });
+      await idb('readwrite', st => { st.clear(); return st.put(data, key); });
     } catch {  }
   }
   return data;
@@ -267,6 +266,7 @@ function buildHand(parent, M, data) {
   const mesh = new THREE.Mesh(g, M.skin);
   parent.add(mesh);
 
+  const nails = [];
   for (const n of data.nails) {
     const nail = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), M.nail);
     const y = new THREE.Vector3(...n.dir), z = new THREE.Vector3(...n.dorsal), x = new THREE.Vector3().crossVectors(z, y);
@@ -274,6 +274,7 @@ function buildHand(parent, M, data) {
     nail.scale.set(n.width * 0.5, 1.4, n.length * 0.5);
     nail.position.fromArray(n.base);
     parent.add(nail);
+    nails.push(nail);
   }
 
   const base = data.positions.slice(), baseN = data.normals.slice();
@@ -294,7 +295,10 @@ function buildHand(parent, M, data) {
     g.attributes.position.needsUpdate = true;
     g.attributes.normal.needsUpdate = true;
   }
-  return { mesh, squeeze, stats: data.stats };
+  function remove() {
+    for (const o of [mesh, ...nails]) { o.removeFromParent(); o.geometry.dispose(); }
+  }
+  return { mesh, squeeze, remove, stats: data.stats };
 }
 
 export function buildCasing(M, mm) {
@@ -336,7 +340,7 @@ export function buildCasing(M, mm) {
   return casing;
 }
 
-export function buildGunModel({ cache = true } = {}) {
+export function buildGunModel({ cache = true, handStep = 1.4 } = {}) {
   const M = makeMaterials();
   const root = new THREE.Group();
   const mm = new THREE.Group();
@@ -348,12 +352,21 @@ export function buildGunModel({ cache = true } = {}) {
   const shadows = () => root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
   shadows();
   const model = { root, ...pistol, squeeze: () => {}, handStats: null, M, UNIT };
-  model.handReady = loadHandData(pistol.occluders, { cache }).then(data => {
-    const hand = buildHand(pistol.body, M, data);
+  let hand = null, wanted = handStep;
+  const useHand = (data, step) => {
+    if (step !== wanted) return model;
+    hand?.remove();
+    hand = buildHand(pistol.body, M, data);
     shadows();
     model.squeeze = hand.squeeze;
     model.handStats = hand.stats;
     return model;
-  });
+  };
+  model.handReady = loadHandData(pistol.occluders, { cache, step: handStep }).then(data => useHand(data, handStep));
+  model.setHandStep = step => {
+    if (step === wanted) return model.handReady;
+    wanted = step;
+    return loadHandData(pistol.occluders, { cache, step }).then(data => useHand(data, step));
+  };
   return model;
 }
