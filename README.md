@@ -26,6 +26,11 @@ irm https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.ps1 | iex
 
 One line, nothing else needed. Run it again any time to update.
 
+**One more step so shots can close windows:**
+- **Mac:** turn on **Electron** in System Settings → Privacy & Security → Accessibility (older Macs: System Preferences → Security & Privacy → Privacy → Accessibility), then restart WindowSniper.
+- **Linux:** run `sudo apt install x11-utils wmctrl xdotool`. Needs an X11 session, not Wayland.
+- **Windows:** nothing to do.
+
 Next time, start it with `windowsniper` in a new terminal (Mac/Linux) or from the Start menu (Windows).
 
 <p align="center">
@@ -43,17 +48,10 @@ Next time, start it with `windowsniper` in a new terminal (Mac/Linux) or from th
 3 shots kill a window. Shoot its title bar instead and 2 headshots quit the whole app. Leave a window alone for 20 seconds and it heals.
 
 <details>
-<summary><b>Shots don't close anything?</b></summary>
-
-- **Mac:** turn on **Electron** in System Settings → Privacy & Security → Accessibility (on older Macs: System Preferences → Security & Privacy → Privacy → Accessibility). Then quit WindowSniper and start it again.
-- **Linux:** needs an X11 session (not Wayland) and `sudo apt install x11-utils wmctrl xdotool`.
-- **Still nothing?** The log is `windowsniper.log` in the WindowSniper folder.
-</details>
-
-<details>
 <summary><b>More</b></summary>
 
 - **Start at login / Quit:** right-click the crosshair in your menu bar or tray.
+- **Shots still don't close anything?** Check `windowsniper.log` in the WindowSniper folder.
 - **Uninstall:** untick Start at login, quit, then delete `~/WindowSniper` and the `windowsniper` line in `~/.zshrc` or `~/.bashrc` (Mac/Linux), or `%LOCALAPPDATA%\WindowSniper` and the Start menu shortcut (Windows).
 - **Tweak it:** gun feel at the top of `gun.html`, health and hotkey at the top of `main.js`.
 </details>
