@@ -31,21 +31,70 @@ function ensureAccessibility() {
   return false;
 }
 
+const AX_PANE = 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility';
+const WELCOMED = () => path.join(app.getPath('userData'), '.welcomed');
+const has = cmd => require('child_process').spawnSync('sh', ['-c', `command -v ${cmd}`]).status === 0;
+
+function message(opts) {
+  app.focus({ steal: true });
+  return dialog.showMessageBox({ type: 'info', buttons: ['OK'], ...opts });
+}
+
 async function askForAccess() {
+  const { response } = await message({
+    message: 'One quick step',
+    detail: 'WindowSniper needs Accessibility access to close windows.\n\nClick Open Settings, then turn on \u201cElectron\u201d.',
+    buttons: ['Open Settings', 'Later'],
+    defaultId: 0,
+    cancelId: 1,
+  });
+  if (response !== 0) return false;
   systemPreferences.isTrustedAccessibilityClient(true);
+  setTimeout(() => shell.openExternal(AX_PANE), 400);
   const started = Date.now();
   while (!canClose()) {
-    if (Date.now() - started > 10 * 60 * 1000) return;
+    if (Date.now() - started > 10 * 60 * 1000) return false;
     await new Promise(r => setTimeout(r, 1500));
   }
   log('accessibility allowed');
-  app.focus({ steal: true });
-  dialog.showMessageBox({
-    type: 'info',
-    message: "You're all set",
-    detail: `Press ${prettyHotkey} to draw the gun, then click a window to shoot it.`,
-    buttons: ['OK'],
+  return true;
+}
+
+async function linuxCheck() {
+  const missing = [];
+  if (!has('xprop') || !has('xwininfo')) missing.push('x11-utils');
+  if (!has('wmctrl') && !has('xdotool')) missing.push('wmctrl');
+  if (missing.length) {
+    const cmd = `sudo apt install ${missing.join(' ')}`;
+    const { response } = await message({
+      message: 'Almost ready',
+      detail: `WindowSniper needs a few X11 tools to close windows. Run this in a terminal:\n\n${cmd}\n\n(Fedora: sudo dnf install xorg-x11-utils wmctrl)`,
+      buttons: ['Copy command', 'OK'],
+      defaultId: 0,
+    });
+    if (response === 0) require('electron').clipboard.writeText(cmd);
+  }
+  if (process.env.XDG_SESSION_TYPE === 'wayland') {
+    await message({
+      message: 'You\u2019re on Wayland',
+      detail: 'WindowSniper can only close X11 apps here. Pick an \u201cX11\u201d or \u201cXorg\u201d session on the login screen for it to work on every window.',
+    });
+  }
+}
+
+async function welcome() {
+  let justAllowed = false;
+  if (process.platform === 'darwin' && !canClose()) {
+    justAllowed = await askForAccess();
+    if (!justAllowed) return;
+  }
+  if (fs.existsSync(WELCOMED()) && !justAllowed) return;
+  if (process.platform === 'linux') await linuxCheck();
+  await message({
+    message: 'You\u2019re all set',
+    detail: `Press ${prettyHotkey} to draw the gun. Click a window to shoot it, Esc to put it away.\n\nWindowSniper lives in your ${process.platform === 'darwin' ? 'menu bar' : 'tray'}.`,
   });
+  try { fs.mkdirSync(app.getPath('userData'), { recursive: true }); fs.writeFileSync(WELCOMED(), ''); } catch {  }
 }
 
 const HOTKEY = 'CommandOrControl+Alt+G';
@@ -247,8 +296,8 @@ app.whenReady().then(() => {
     console.warn(`windowsniper: could not register ${HOTKEY} (another app owns it)`);
   }
   log('WindowSniper started', { platform: process.platform, electron: process.versions.electron });
-  if (process.platform === 'darwin' && !canClose()) askForAccess();
   createOverlay();
+  welcome().catch(err => log('welcome failed:', err?.message || String(err)));
   if (process.argv.includes('--draw')) drawGun();
 });
 

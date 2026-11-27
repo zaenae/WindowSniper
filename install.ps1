@@ -55,7 +55,8 @@
     $p.WaitForExit()
     Write-Host ("`r" + (' ' * ($message.Length + 6)) + "`r") -NoNewline
     if ($p.ExitCode -ne 0) {
-      $details = (Get-Content "$Log.err", $Log -ErrorAction SilentlyContinue | Select-Object -Last 15) -join "`n"
+      $details = (Get-Content "$Log.err", $Log -ErrorAction SilentlyContinue |
+        Where-Object { $_ -match '\S' -and $_ -notmatch '[\u2500-\u259F#]|%$' } | Select-Object -Last 6) -join "`n"
       throw "$message failed.`n$details"
     }
   }

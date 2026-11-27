@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
@@ -22,7 +23,15 @@ try {
   process.exit(1);
 }
 
-const child = spawn(electronBinary, [path.resolve(__dirname, '..'), ...process.argv.slice(2)], {
+const args = [path.resolve(__dirname, '..'), ...process.argv.slice(2)];
+if (process.platform === 'linux' && !args.includes('--no-sandbox')) {
+  try {
+    const helper = fs.statSync(path.join(path.dirname(electronBinary), 'chrome-sandbox'));
+    if (helper.uid !== 0 || !(helper.mode & 0o4000)) args.push('--no-sandbox');
+  } catch { args.push('--no-sandbox'); }
+}
+
+const child = spawn(electronBinary, args, {
   detached: true,
   stdio: 'ignore',
   windowsHide: true,

@@ -25,7 +25,11 @@ NOTED=
 note() { [ -z "$NOTED" ] && printf '\n'; NOTED=1; printf '  %s!%s %s\n' "$YLW" "$RST" "$1"; }
 fail() {
   printf '\n  %s✗ %s%s\n' "$RED" "$1" "$RST"
-  if [ -s "$LOG" ]; then printf '\n%s' "$DIM"; tail -n 15 "$LOG" | sed 's/^/    /'; printf '%s\n' "$RST"; fi
+  if [ -s "$LOG" ]; then
+    printf '\n%s' "$DIM"
+    tail -n 60 "$LOG" | tr '\r' '\n' | sed 's/\x1b\[[0-9;]*m//g' | grep -vE '^[[:space:]]*$|█|▀|▄|╭|╰|┼|%$' | tail -n 6 | sed 's/^/    /'
+    printf '%s\n' "$RST"
+  fi
   printf '\n  Full log: %s\n\n' "$LOG"
   exit 1
 }
@@ -124,7 +128,7 @@ main() {
   ok "WindowSniper is running"
 
   if [ "$os" = "Darwin" ]; then
-    note "macOS will pop up asking to let ${BLD}Electron${RST} control your computer. Click ${BLD}Open System Settings${RST} and switch it on."
+    note "When asked, click ${BLD}Open Settings${RST} and turn on ${BLD}Electron${RST}. That lets shots close windows."
   elif [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
     note "You're on Wayland: only X11 apps can be shot. An Xorg session works best."
   fi

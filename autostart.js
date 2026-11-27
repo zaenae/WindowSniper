@@ -8,7 +8,8 @@ const ID = 'io.github.zaenae.windowsniper';
 
 function launchCommand() {
   if (process.platform === 'linux' && process.env.APPIMAGE) return [process.env.APPIMAGE];
-  return app.isPackaged ? [process.execPath] : [process.execPath, app.getAppPath()];
+  const cmd = app.isPackaged ? [process.execPath] : [process.execPath, app.getAppPath()];
+  return process.argv.includes('--no-sandbox') ? [...cmd, '--no-sandbox'] : cmd;
 }
 
 const macFile = () => path.join(os.homedir(), 'Library', 'LaunchAgents', `${ID}.plist`);
