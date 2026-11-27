@@ -24,6 +24,7 @@ try {
 }
 
 const args = [path.resolve(__dirname, '..'), ...process.argv.slice(2)];
+if (process.platform === 'linux') args.push('--ozone-platform=x11');
 if (process.platform === 'linux' && !args.includes('--no-sandbox')) {
   try {
     const helper = fs.statSync(path.join(path.dirname(electronBinary), 'chrome-sandbox'));

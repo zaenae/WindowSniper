@@ -104,7 +104,14 @@ main() {
   ok "Installed"
   if grep -qs "alias windowsniper=" "$HOME/.zshrc" "$HOME/.bashrc"; then ok "Added the ${BLD}windowsniper${RST} command"; fi
 
-  if [ "$os" = "Linux" ] && linux_tools_missing; then
+  local desktop="${XDG_CURRENT_DESKTOP:-}:${XDG_SESSION_DESKTOP:-}" wayland_ok=
+  if [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
+    case "$(printf '%s' "$desktop" | tr '[:upper:]' '[:lower:]')" in
+      *gnome*|*ubuntu*|*kde*|*plasma*) wayland_ok=1 ;;
+    esac
+  fi
+
+  if [ "$os" = "Linux" ] && [ -z "$wayland_ok" ] && linux_tools_missing; then
     local cmd; cmd=$(linux_install_cmd)
     if [ -z "$cmd" ]; then
       note "Install xprop, xwininfo and wmctrl with your package manager so shots can close windows."
@@ -129,8 +136,11 @@ main() {
 
   if [ "$os" = "Darwin" ]; then
     note "When asked, click ${BLD}Open Settings${RST} and turn on ${BLD}Electron${RST}. That lets shots close windows."
-  elif [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
-    note "You're on Wayland: only X11 apps can be shot. An Xorg session works best."
+  elif [ -n "$wayland_ok" ] && printf '%s' "$desktop" | grep -qiE 'gnome|ubuntu' \
+       && ! dbus-send --session --print-reply --dest=org.gnome.Shell /io/github/zaenae/WindowSniper io.github.zaenae.WindowSniper.Ping >/dev/null 2>&1; then
+    note "Log out and back in once to finish setup. After that, shots close any window."
+  elif [ "${XDG_SESSION_TYPE:-}" = "wayland" ] && [ -z "$wayland_ok" ]; then
+    note "On this Wayland desktop only X11 apps can be shot. GNOME, KDE or an X11 session work fully."
   fi
   printf '\n  Press %s%s%s to draw the gun. Click to shoot, %sEsc%s to put it away.\n' "$BLD" "$hotkey" "$RST" "$BLD" "$RST"
   printf '  Next time, open a new terminal and type %swindowsniper%s.\n\n' "$BLD" "$RST"

@@ -1,0 +1,9 @@
+{
+  "uuid": "windowsniper@zaenae.github.io",
+  "name": "WindowSniper",
+  "description": "Lets WindowSniper find and close windows on Wayland.",
+  "url": "https://github.com/zaenae/WindowSniper",
+  "settings-schema": "org.gnome.shell.extensions.windowsniper",
+  "shell-version": ["45", "46", "47", "48", "49", "50", "51", "52"],
+  "version-name": "1"
+}

@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { findWindowAt, closeTarget, canClose } = require('./targets');
 const autostart = require('./autostart');
+const wayland = require('./wayland');
 
 const LOG_FILE = app.isPackaged ? path.join(app.getPath('userData'), 'windowsniper.log') : path.join(__dirname, 'windowsniper.log');
 function log(...args) {
@@ -60,7 +61,8 @@ async function askForAccess() {
   return true;
 }
 
-async function linuxCheck() {
+async function linuxCheck(waylandStatus) {
+  if (waylandStatus === 'ready') return;
   const missing = [];
   if (!has('xprop') || !has('xwininfo')) missing.push('x11-utils');
   if (!has('wmctrl') && !has('xdotool')) missing.push('wmctrl');
@@ -74,22 +76,34 @@ async function linuxCheck() {
     });
     if (response === 0) require('electron').clipboard.writeText(cmd);
   }
-  if (process.env.XDG_SESSION_TYPE === 'wayland') {
+  if (waylandStatus === 'unsupported') {
     await message({
       message: 'You\u2019re on Wayland',
-      detail: 'WindowSniper can only close X11 apps here. Pick an \u201cX11\u201d or \u201cXorg\u201d session on the login screen for it to work on every window.',
+      detail: 'On this desktop WindowSniper can only close X11 apps. GNOME and KDE Plasma work fully, or pick an \u201cX11\u201d session on the login screen.',
     });
   }
 }
 
-async function welcome() {
+async function welcome(waylandStatus) {
   let justAllowed = false;
   if (process.platform === 'darwin' && !canClose()) {
     justAllowed = await askForAccess();
     if (!justAllowed) return;
   }
+  if (waylandStatus === 'relogin') {
+    const canLogOut = has('gnome-session-quit');
+    const { response } = await message({
+      message: 'One more step',
+      detail: 'Log out and back in once to finish setting up WindowSniper. After that, shots close any window.',
+      buttons: canLogOut ? ['Log Out Now', 'Later'] : ['OK'],
+      defaultId: 0,
+      cancelId: canLogOut ? 1 : 0,
+    });
+    if (canLogOut && response === 0) require('child_process').spawn('gnome-session-quit', ['--logout'], { detached: true, stdio: 'ignore' }).unref();
+    return;
+  }
   if (fs.existsSync(WELCOMED()) && !justAllowed) return;
-  if (process.platform === 'linux') await linuxCheck();
+  if (process.platform === 'linux') await linuxCheck(waylandStatus);
   await message({
     message: 'You\u2019re all set',
     detail: `Press ${prettyHotkey} to draw the gun. Click a window to shoot it, Esc to put it away.\n\nWindowSniper lives in your ${process.platform === 'darwin' ? 'menu bar' : 'tray'}.`,
@@ -154,7 +168,8 @@ function drawGun() {
   const display = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
   overlay.setBounds(display.bounds);
   overlay.showInactive();
-  globalShortcut.register('Escape', holsterGun);
+  if (wayland.isReady()) wayland.setDrawn(true);
+  else globalShortcut.register('Escape', holsterGun);
   if (overlayReady) overlay.webContents.send('spawn-gun');
   else spawnQueued = true;
 }
@@ -170,7 +185,8 @@ function toggleGun() {
 
 ipcMain.on('hide-overlay', () => {
   if (overlay) overlay.hide();
-  globalShortcut.unregister('Escape');
+  if (wayland.isReady()) wayland.setDrawn(false);
+  else globalShortcut.unregister('Escape');
 });
 
 function ownWindows() {
@@ -266,7 +282,7 @@ const prettyHotkey = HOTKEY
   .replace('Alt', process.platform === 'darwin' ? '⌥' : 'Alt')
   .replace(/\+/g, process.platform === 'darwin' ? '' : '+');
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   if (process.platform === 'darwin' && app.dock) app.dock.hide();
 
   tray = new Tray(trayIcon());
@@ -292,15 +308,16 @@ app.whenReady().then(() => {
     tray.on('right-click', () => tray.popUpContextMenu(buildMenu()));
   }
 
-  if (!globalShortcut.register(HOTKEY, toggleGun)) {
-    console.warn(`windowsniper: could not register ${HOTKEY} (another app owns it)`);
-  }
   log('WindowSniper started', { platform: process.platform, electron: process.versions.electron });
   createOverlay();
-  welcome().catch(err => log('welcome failed:', err?.message || String(err)));
+  const waylandStatus = await wayland.start({ toggle: toggleGun, holster: holsterGun, log });
+  if (waylandStatus !== 'ready' && !globalShortcut.register(HOTKEY, toggleGun)) {
+    log(`could not register ${HOTKEY} (another app owns it)`);
+  }
+  welcome(waylandStatus).catch(err => log('welcome failed:', err?.message || String(err)));
   if (process.argv.includes('--draw')) drawGun();
 });
 
 app.on('second-instance', toggleGun);
-app.on('will-quit', () => globalShortcut.unregisterAll());
+app.on('will-quit', () => { globalShortcut.unregisterAll(); wayland.stop(); });
 app.on('window-all-closed', e => e.preventDefault());

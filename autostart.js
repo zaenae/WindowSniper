@@ -9,7 +9,7 @@ const ID = 'io.github.zaenae.windowsniper';
 function launchCommand() {
   if (process.platform === 'linux' && process.env.APPIMAGE) return [process.env.APPIMAGE];
   const cmd = app.isPackaged ? [process.execPath] : [process.execPath, app.getAppPath()];
-  return process.argv.includes('--no-sandbox') ? [...cmd, '--no-sandbox'] : cmd;
+  return [...cmd, ...process.argv.filter(a => a === '--no-sandbox' || a.startsWith('--ozone-platform'))];
 }
 
 const macFile = () => path.join(os.homedir(), 'Library', 'LaunchAgents', `${ID}.plist`);

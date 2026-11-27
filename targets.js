@@ -305,7 +305,10 @@ function closeMac(target, quitApp) {
   } finally { api.CFRelease(appEl); }
 }
 
+const wayland = require('./wayland');
+
 async function findLinux(pt, own) {
+  if (wayland.isReady()) return wayland.findWindowAt(pt, own);
   const stacking = await run('xprop', ['-root', '-notype', '_NET_CLIENT_LIST_STACKING']);
   const ids = (stacking.match(/0x[0-9a-f]+/gi) || []).reverse();
   for (const id of ids) {
@@ -336,6 +339,7 @@ async function closeLinux(target, quitApp) {
   if (quitApp && target.pid) {
     try { process.kill(target.pid, 'SIGTERM'); return; } catch {  }
   }
+  if (wayland.isReady()) return wayland.close(target);
   try {
     await run('wmctrl', ['-i', '-c', target.handle]);
   } catch {

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.windowsniper" path="/org/gnome/shell/extensions/windowsniper/">
+    <key name="draw" type="as">
+      <default><![CDATA[['<Control><Alt>g']]]></default>
+      <summary>Draw or holster the gun</summary>
+    </key>
+    <key name="holster" type="as">
+      <default><![CDATA[['Escape']]]></default>
+      <summary>Holster the gun while it is out</summary>
+    </key>
+  </schema>
+</schemalist>

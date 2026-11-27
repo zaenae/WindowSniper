@@ -14,7 +14,7 @@
 
 ## Install
 
-**Mac / Linux** (Terminal) · macOS 10.15+ or Linux with X11
+**Mac / Linux** (Terminal) · macOS 10.15+, or Linux (X11, or Wayland on GNOME and KDE)
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.sh | bash
 ```
@@ -26,7 +26,7 @@ irm https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.ps1 | iex
 
 One line installs everything, Node.js included. Run it again any time to update.
 
-On Mac, click **Open Settings** when asked and turn on **Electron** (the engine WindowSniper runs on). On Linux, enter your password if asked. Windows needs nothing.
+On Mac, click **Open Settings** when asked and turn on **Electron** (the engine WindowSniper runs on). On Linux, enter your password if asked, and on GNOME Wayland (like Ubuntu) log out and back in once. Windows needs nothing.
 
 Next time, start it with `windowsniper` in a new terminal (Mac/Linux) or from the Start menu (Windows).
 
@@ -62,7 +62,7 @@ pkill -f "$HOME/WindowSniper"; launchctl remove io.github.zaenae.windowsniper 2>
 
 Linux
 ```bash
-pkill -f "$HOME/WindowSniper"; rm -rf ~/WindowSniper ~/.config/autostart/windowsniper.desktop ~/.config/windowsniper ~/.cache/electron; sed -i '/# WindowSniper/d;/alias windowsniper=/d' ~/.zshrc ~/.bashrc 2>/dev/null
+pkill -f "$HOME/WindowSniper"; gnome-extensions disable windowsniper@zaenae.github.io 2>/dev/null; rm -rf ~/WindowSniper ~/.config/autostart/windowsniper.desktop ~/.config/windowsniper ~/.cache/electron ~/.local/share/gnome-shell/extensions/windowsniper@zaenae.github.io; sed -i '/# WindowSniper/d;/alias windowsniper=/d' ~/.zshrc ~/.bashrc 2>/dev/null
 ```
 
 Windows

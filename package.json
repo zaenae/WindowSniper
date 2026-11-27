@@ -1,6 +1,6 @@
 {
   "name": "windowsniper",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Shoot a window. It closes. A GTA-style pistol for your desktop.",
   "license": "MIT",
   "main": "main.js",
@@ -41,7 +41,10 @@
     "install.sh",
     "install.ps1",
     "autostart.js",
-    "vendor"
+    "vendor",
+    "wayland.js",
+    "dbus.js",
+    "linux"
   ],
   "dependencies": {
     "@fontsource/anton": "^5.3.0",
@@ -54,7 +57,10 @@
     "type": "git",
     "url": "git+https://github.com/zaenae/WindowSniper.git"
   },
-  "author": "zaenae",
+  "author": {
+    "name": "zaenae",
+    "email": "121278190+zaenae@users.noreply.github.com"
+  },
   "build": {
     "appId": "io.github.zaenae.windowsniper",
     "productName": "WindowSniper",
@@ -69,10 +75,14 @@
       "targets.js",
       "icon/**",
       "fonts/**",
-      "vendor/**"
+      "vendor/**",
+      "wayland.js",
+      "dbus.js",
+      "linux/gnome/**"
     ],
     "asarUnpack": [
-      "node_modules/koffi/**"
+      "node_modules/koffi/**",
+      "linux/gnome/**"
     ],
     "artifactName": "${productName}-${os}-${arch}.${ext}",
     "mac": {
@@ -125,26 +135,52 @@
     "linux": {
       "target": [
         {
-          "target": "AppImage",
+          "target": "deb",
           "arch": [
             "x64"
           ]
         },
         {
-          "target": "tar.gz",
+          "target": "rpm",
           "arch": [
             "x64"
           ]
         }
       ],
       "category": "Game",
-      "icon": "icon/icon.png"
+      "icon": "icon/icon.png",
+      "maintainer": "zaenae <121278190+zaenae@users.noreply.github.com>",
+      "synopsis": "Shoot a window. It closes.",
+      "executableArgs": [
+        "--ozone-platform=x11"
+      ]
     },
     "publish": {
       "provider": "github",
       "owner": "zaenae",
       "repo": "WindowSniper",
       "releaseType": "release"
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0 | libgtk-3-0t64",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0 | libatspi2.0-0t64",
+        "libuuid1",
+        "libsecret-1-0",
+        "x11-utils",
+        "wmctrl"
+      ],
+      "afterInstall": "linux/after-install.sh",
+      "afterRemove": "linux/after-remove.sh"
+    },
+    "rpm": {
+      "afterInstall": "linux/after-install.sh",
+      "afterRemove": "linux/after-remove.sh"
     }
   },
   "keywords": [

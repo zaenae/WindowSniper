@@ -22,6 +22,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm
       - name: Build (publishes to the release when a v* tag was pushed)
         run: node tools/dist.js --publish ${{ startsWith(github.ref, 'refs/tags/v') && 'always' || 'never' }}
         env:
@@ -34,6 +36,6 @@ jobs:
             dist/*.dmg
             dist/*.zip
             dist/*.exe
-            dist/*.AppImage
-            dist/*.tar.gz
+            dist/*.deb
+            dist/*.rpm
           if-no-files-found: ignore
