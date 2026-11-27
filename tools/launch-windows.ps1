@@ -38,6 +38,8 @@ if ($stale) {
   if ($LASTEXITCODE -ne 0) { throw 'npm install failed (see above).' }
   Copy-Item 'package.json' $stamp
 }
+node tools/setup.js
+if ($LASTEXITCODE -ne 0) { throw 'Setup failed (see above).' }
 
 if ($env:WINDOWSNIPER_NO_START -eq '1') { return }
 node bin/windowsniper.js @args

@@ -18,7 +18,7 @@ let electronBinary;
 try {
   electronBinary = require('electron');
 } catch {
-  console.error(red('  ✗ Electron is missing. Reinstall with: npm install -g windowsniper'));
+  console.error(red('  ✗ Electron is missing. Run the install command again.'));
   process.exit(1);
 }
 

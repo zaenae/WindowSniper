@@ -54,6 +54,7 @@ if [ ! -d node_modules/electron/dist ] || ! cmp -s package.json node_modules/.wi
   fi
   cp package.json node_modules/.windowsniper-package.json
 fi
+node tools/setup.js || exit 1
 
 if [ "$(uname -s)" = "Linux" ]; then
   missing=""
