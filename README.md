@@ -29,6 +29,24 @@ You don't need anything installed first. It downloads WindowSniper, sets it up a
 
 <img src="docs/installer.png" alt="The installer running in a terminal" width="640">
 
+### Or download the app
+
+Grab it from the [Releases](https://github.com/zaenae/WindowSniper/releases) page.
+
+**Mac:** download the `.dmg`. Get `mac-arm64` if your Mac has an M1, M2, M3 or M4 chip, or `mac-x64` if it's an older Intel Mac (Apple menu → About This Mac tells you).
+
+1. Double-click the `.dmg`, then drag WindowSniper into the Applications folder.
+2. Eject the disk from Finder's sidebar.
+3. The app isn't signed by Apple, so macOS will say it's damaged. It isn't. Open Terminal and run this once:
+   ```bash
+   xattr -cr /Applications/WindowSniper.app
+   ```
+4. Open WindowSniper from Applications. A crosshair shows up in your menu bar.
+
+**Windows:** download the `.exe` and run it. If SmartScreen complains, click **More info**, then **Run anyway**.
+
+**Linux:** download the `.AppImage`, run `chmod +x WindowSniper-*.AppImage`, then open it.
+
 ## How to play
 
 - **Ctrl+Alt+G** (**⌘⌥G** on a Mac) pulls the gun out. Press it again, or **Esc**, to put it away.
@@ -43,7 +61,7 @@ Next time, type `windowsniper` in a new terminal (Mac/Linux) or open WindowSnipe
 
 ## Good to know
 
-**Mac:** the first time you shoot, macOS asks whether WindowSniper can control your computer. Allow it in System Settings → Privacy & Security → Accessibility (it shows up as **Electron**). Until then, shots won't close anything.
+**Mac:** the first time you shoot, macOS asks whether WindowSniper can control your computer. Allow it in System Settings → Privacy & Security → Accessibility. It shows up as **WindowSniper** if you used the `.dmg`, or **Electron** if you used the install line. Until then, shots won't close anything.
 
 **Linux:** you need an X11 session and a few small tools. The installer tells you if any are missing:
 
@@ -59,6 +77,7 @@ If something isn't working, the log is `windowsniper.log` in the WindowSniper fo
 
 Turn off **Start at login** if you switched it on, quit WindowSniper, then:
 
+- **Mac app from the `.dmg`:** drag WindowSniper from Applications to the Trash.
 - **Mac/Linux:** delete the `~/WindowSniper` folder and the `windowsniper` line in `~/.zshrc` or `~/.bashrc`.
 - **Windows:** delete `%LOCALAPPDATA%\WindowSniper` and the WindowSniper shortcut in the Start menu.
 
