@@ -6,92 +6,68 @@
          Shoot a window. It closes.
 ```
 
-Got a window you're sick of? Press a key, a pistol comes up from the bottom of your screen, and you shoot it. Three hits and it's gone.
+<p align="center">
+  <img src="docs/screenshot.jpg" alt="WindowSniper killing a browser window" width="820">
+</p>
 
-
-![WindowSniper killing a browser window](docs/screenshot.jpg)
+<p align="center"><b>A GTA-style pistol for your desktop.</b> Mac, Windows, Linux. Free.</p>
 
 ## Install
 
-On a Mac or Linux, paste this into Terminal:
-
+**Mac / Linux** (Terminal)
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.sh | bash
 ```
 
-On Windows, paste this into PowerShell:
-
+**Windows** (PowerShell)
 ```powershell
 irm https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.ps1 | iex
 ```
 
-You don't need anything installed first. It downloads WindowSniper, sets it up and starts it. Run the same line again later to update.
+Or grab the app from [**Releases**](https://github.com/zaenae/WindowSniper/releases).
 
-<img src="docs/installer.png" alt="The installer running in a terminal" width="640">
+<p align="center">
+  <img src="docs/installer.png" alt="The installer" width="560">
+</p>
 
-### Or download the app
+## Play
 
-Grab it from the [Releases](https://github.com/zaenae/WindowSniper/releases) page.
+| | |
+|---|---|
+| **Ctrl+Alt+G** (Mac: **⌘⌥G**) | Pull out the gun |
+| **Click** | Shoot |
+| **Esc** | Put it away |
 
-**Mac:** download the `.dmg`. Get `mac-arm64` if your Mac has an M1, M2, M3 or M4 chip, or `mac-x64` if it's an older Intel Mac (Apple menu → About This Mac tells you).
+3 shots kill a window. Shoot the title bar for a headshot.
 
-1. Double-click the `.dmg`, then drag WindowSniper into the Applications folder.
-2. Eject the disk from Finder's sidebar.
-3. The app isn't signed by Apple, so macOS will say it's damaged. It isn't. Open Terminal and run this once:
-   ```bash
-   xattr -cr /Applications/WindowSniper.app
-   ```
-4. Open WindowSniper from Applications. A crosshair shows up in your menu bar.
+<details>
+<summary><b>Mac app from Releases says it's "damaged"?</b></summary>
 
-**Windows:** download the `.exe` and run it. If SmartScreen complains, click **More info**, then **Run anyway**.
-
-**Linux:** download the `.AppImage`, run `chmod +x WindowSniper-*.AppImage`, then open it.
-
-## How to play
-
-- **Ctrl+Alt+G** (**⌘⌥G** on a Mac) pulls the gun out. Press it again, or **Esc**, to put it away.
-- **Click** to shoot whatever window is under the crosshair.
-- **Three body shots** kill a window. Shoot its **title bar** for a headshot: two of those and the whole app quits.
-- Stop shooting a window for 20 seconds and it heals.
-- Shooting the desktop, the Dock or the taskbar does nothing.
-
-A kill closes the window the same way its X button does, so apps still ask before throwing away unsaved work.
-
-Next time, type `windowsniper` in a new terminal (Mac/Linux) or open WindowSniper from the Start menu (Windows). It keeps running in the background after you close the terminal. To have it start on its own, right-click the crosshair icon in your menu bar or tray and tick **Start at login**. To quit, right-click it and choose **Quit WindowSniper**.
-
-## Good to know
-
-**Mac:** the first time you shoot, macOS asks whether WindowSniper can control your computer. Allow it in System Settings → Privacy & Security → Accessibility. It shows up as **WindowSniper** if you used the `.dmg`, or **Electron** if you used the install line. Until then, shots won't close anything.
-
-**Linux:** you need an X11 session and a few small tools. The installer tells you if any are missing:
+It isn't, it's just not signed by Apple. Drag it into Applications, then run this once in Terminal:
 
 ```bash
-sudo apt install x11-utils wmctrl xdotool
+xattr -cr /Applications/WindowSniper.app
 ```
 
-**Windows:** nothing extra.
+Pick `mac-arm64` for M1–M4 Macs, `mac-x64` for older Intel ones.
+</details>
 
-If something isn't working, the log is `windowsniper.log` in the WindowSniper folder.
+<details>
+<summary><b>Shots don't close anything?</b></summary>
 
-## Uninstall
+- **Mac:** allow it in System Settings → Privacy & Security → Accessibility.
+- **Linux:** needs X11 and `sudo apt install x11-utils wmctrl xdotool`.
+- **Windows:** if SmartScreen complains, click More info → Run anyway.
+</details>
 
-Turn off **Start at login** if you switched it on, quit WindowSniper, then:
+<details>
+<summary><b>More</b></summary>
 
-- **Mac app from the `.dmg`:** drag WindowSniper from Applications to the Trash.
-- **Mac/Linux:** delete the `~/WindowSniper` folder and the `windowsniper` line in `~/.zshrc` or `~/.bashrc`.
-- **Windows:** delete `%LOCALAPPDATA%\WindowSniper` and the WindowSniper shortcut in the Start menu.
+- **Start at login / Quit:** right-click the crosshair in your menu bar or tray.
+- **Uninstall:** delete `~/WindowSniper` (Mac/Linux), `%LOCALAPPDATA%\WindowSniper` (Windows), or drag the app to the Trash.
+- **Tweak it:** gun feel at the top of `gun.html`, health and hotkey at the top of `main.js`.
+</details>
 
-## For tinkerers
+---
 
-- Run it straight from a clone with `bash WindowSniper.command` (Mac/Linux) or `WindowSniper.cmd` (Windows).
-- The feel of the gun (recoil, sway, magazine size, volume) is set at the top of `gun.html`. Health, damage and the hotkey are at the top of `main.js`.
-- Everything is drawn in code, including the gun, the hand, the textures and the sounds. `gun-model.js` builds the pistol, and `hand-sdf.js` sculpts the hand.
-- `npm install` then `npm run dist` builds a regular app for your system. Pushing a tag like `v0.1.0` makes GitHub build the Mac, Windows and Linux apps and put them on the Releases page.
-
-## Not affiliated with Rockstar
-
-WindowSniper is a fan-made joke inspired by the GTA games. It isn't made, endorsed or approved by Rockstar Games or Take-Two Interactive, and it doesn't use any of their art, fonts, sounds or code. Grand Theft Auto and GTA are their trademarks.
-
-## License
-
-MIT. See [LICENSE](LICENSE).
+<sub>Fan-made joke inspired by GTA. Not affiliated with Rockstar Games or Take-Two. MIT license.</sub>
