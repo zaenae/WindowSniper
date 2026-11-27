@@ -8,7 +8,6 @@
 
 Got a window you're sick of? Press a key, a pistol comes up from the bottom of your screen, and you shoot it. Three hits and it's gone.
 
-It's meant to feel like GTA: wanted stars, cash for every kill, casings flying out of the gun, and a big red **KILLED** when a window goes down.
 
 ![WindowSniper killing a browser window](docs/screenshot.jpg)
 
