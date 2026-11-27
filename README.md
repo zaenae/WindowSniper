@@ -14,7 +14,7 @@
 
 ## Install
 
-**Mac / Linux** (Terminal)
+**Mac / Linux** (Terminal, macOS 10.15 or newer)
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.sh | bash
 ```

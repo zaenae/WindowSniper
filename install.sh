@@ -66,6 +66,15 @@ main() {
     *) fail "This installer is for macOS and Linux. On Windows, use install.ps1." ;;
   esac
   case "$arch" in arm64|aarch64) name="$name (ARM)" ;; *) name="$name ($arch)" ;; esac
+  if [ "$os" = "Darwin" ]; then
+    local mac major rest minor
+    mac=$(sw_vers -productVersion 2>/dev/null || echo 99)
+    major=${mac%%.*}; rest=${mac#*.}; minor=${rest%%.*}
+    if [ "$major" -eq 10 ] && [ "${minor:-0}" -lt 15 ]; then
+      fail "WindowSniper needs macOS 10.15 Catalina or newer. This Mac has $mac."
+    fi
+    name="macOS $mac ($arch)"
+  fi
   command -v curl >/dev/null || [ -f "$SOURCE" ] || fail "curl is needed to download WindowSniper."
   ok "Found $name"
 

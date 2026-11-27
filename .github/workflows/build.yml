@@ -23,7 +23,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Build (publishes to the release when a v* tag was pushed)
-        run: npx electron-builder --publish ${{ startsWith(github.ref, 'refs/tags/v') && 'always' || 'never' }}
+        run: npx --yes electron-builder@25.1.8 --publish ${{ startsWith(github.ref, 'refs/tags/v') && 'always' || 'never' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false

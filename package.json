@@ -1,6 +1,6 @@
 {
   "name": "windowsniper",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A 3D .50 hand-cannon on your desktop. Shoot a window to close it.",
   "license": "MIT",
   "main": "main.js",
@@ -13,15 +13,15 @@
     "win32"
   ],
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18"
   },
   "scripts": {
     "start": "electron .",
     "draw": "electron . --draw",
-    "dist": "electron-builder",
-    "dist:mac": "electron-builder --mac",
-    "dist:win": "electron-builder --win",
-    "dist:linux": "electron-builder --linux"
+    "dist": "npx --yes electron-builder@25.1.8",
+    "dist:mac": "npx --yes electron-builder@25.1.8 --mac",
+    "dist:win": "npx --yes electron-builder@25.1.8 --win",
+    "dist:linux": "npx --yes electron-builder@25.1.8 --linux"
   },
   "files": [
     "main.js",
@@ -48,8 +48,7 @@
     "three": "^0.170.0"
   },
   "devDependencies": {
-    "electron": "^33.0.0",
-    "electron-builder": "^25.1.8"
+    "electron": "31.7.7"
   },
   "homepage": "https://github.com/zaenae/WindowSniper#readme",
   "repository": {
@@ -99,7 +98,8 @@
       "extendInfo": {
         "LSUIElement": true,
         "NSAppleEventsUsageDescription": "WindowSniper closes the windows you shoot."
-      }
+      },
+      "minimumSystemVersion": "10.15"
     },
     "win": {
       "target": [

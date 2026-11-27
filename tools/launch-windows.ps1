@@ -1,12 +1,18 @@
 $ErrorActionPreference = 'Stop'
 Set-Location (Split-Path -Parent $PSScriptRoot)
-$NodeVersion = '22.12.0'
+$NodeVersion = '20.18.1'
 
 function Test-Command($name) { [bool](Get-Command $name -ErrorAction SilentlyContinue) }
 
-if (-not (Test-Command 'npm')) {
+function Test-Node {
+  if (-not (Test-Command 'npm')) { return $false }
+  try { [int](node -p "process.versions.node.split('.')[0]") -ge 18 } catch { $false }
+}
+
+if (-not (Test-Node)) {
   $local = Join-Path (Get-Location) '.node'
-  if (-not (Test-Path (Join-Path $local 'npm.cmd'))) {
+  $env:Path = "$local;$env:Path"
+  if (-not (Test-Node)) {
     $arch = if ($env:PROCESSOR_ARCHITECTURE -eq 'ARM64') { 'arm64' } else { 'x64' }
     $name = "node-v$NodeVersion-win-$arch"
     $zip = Join-Path $env:TEMP "$name.zip"

@@ -1,15 +1,32 @@
 #!/bin/bash
 cd "$(dirname "$0")" || exit 1
 
-if ! command -v npm >/dev/null 2>&1; then
+if [ "$(uname -s)" = "Darwin" ]; then
+  mac=$(sw_vers -productVersion 2>/dev/null || echo 99)
+  major=${mac%%.*}; rest=${mac#*.}; minor=${rest%%.*}
+  if [ "$major" -eq 10 ] && [ "${minor:-0}" -lt 15 ]; then
+    echo "WindowSniper needs macOS 10.15 Catalina or newer. This Mac has $mac."
+    exit 1
+  fi
+fi
+
+NODE_VERSION=20.18.1
+node_ok() {
+  command -v npm >/dev/null 2>&1 || return 1
+  local v; v=$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null) || return 1
+  [ "${v:-0}" -ge 18 ]
+}
+
+if ! node_ok; then
   for p in /opt/homebrew/bin /usr/local/bin "$HOME/.volta/bin"; do
     [ -x "$p/npm" ] && export PATH="$p:$PATH"
   done
   [ -s "$HOME/.nvm/nvm.sh" ] && . "$HOME/.nvm/nvm.sh"
 fi
-NODE_VERSION=22.12.0
-if ! command -v npm >/dev/null 2>&1; then
-  if [ ! -x ".node/bin/npm" ]; then
+
+if ! node_ok; then
+  export PATH="$PWD/.node/bin:$PATH"
+  if ! node_ok || [ "$(node -v 2>/dev/null)" != "v$NODE_VERSION" ]; then
     case "$(uname -s)-$(uname -m)" in
       Darwin-arm64)  PLAT=darwin-arm64 ;;
       Darwin-x86_64) PLAT=darwin-x64 ;;
@@ -17,22 +34,22 @@ if ! command -v npm >/dev/null 2>&1; then
       Linux-aarch64) PLAT=linux-arm64 ;;
       *) echo "Please install Node.js from https://nodejs.org and run me again."; exit 1 ;;
     esac
-    echo "Node.js not found - downloading a private copy just for WindowSniper (~45 MB, one time)..."
+    echo "Downloading a private copy of Node.js just for WindowSniper (~45 MB, one time)..."
     rm -rf .node && mkdir -p .node
     if ! curl -fL --progress-bar "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-$PLAT.tar.gz" \
          | tar -xz -C .node --strip-components=1; then
       rm -rf .node
-      read -n1 -r -p "Download failed - check your internet connection. Press any key to close."
+      echo "Download failed - check your internet connection."
       exit 1
     fi
+    node_ok || { echo "Node.js won't run on this computer."; exit 1; }
   fi
-  export PATH="$PWD/.node/bin:$PATH"
 fi
 
 if [ ! -d node_modules/electron/dist ] || ! cmp -s package.json node_modules/.windowsniper-package.json; then
   echo "Installing WindowSniper (about a minute the first time)..."
   if ! npm install --no-fund --no-audit; then
-    read -n1 -r -p "Install failed (see above). Press any key to close."
+    echo "Install failed (see above)."
     exit 1
   fi
   cp package.json node_modules/.windowsniper-package.json
