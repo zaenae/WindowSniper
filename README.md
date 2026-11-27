@@ -36,6 +36,8 @@ Next time, start it with `windowsniper` in a new terminal (Mac/Linux) or from th
 
 ## Play
 
+WindowSniper waits quietly in the background. Press the shortcut anytime, in any app, and the gun pops up.
+
 | | |
 |---|---|
 | **Ctrl+Alt+G** (Mac: **⌘⌥G**) | Pull out the gun |
