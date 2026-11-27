@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen, globalShortcut, systemPreferences, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, ipcMain, nativeImage, screen, globalShortcut, systemPreferences, shell, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { findWindowAt, closeTarget, canClose } = require('./targets');
@@ -29,6 +29,23 @@ function ensureAccessibility() {
     shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility');
   }
   return false;
+}
+
+async function askForAccess() {
+  systemPreferences.isTrustedAccessibilityClient(true);
+  const started = Date.now();
+  while (!canClose()) {
+    if (Date.now() - started > 10 * 60 * 1000) return;
+    await new Promise(r => setTimeout(r, 1500));
+  }
+  log('accessibility allowed');
+  app.focus({ steal: true });
+  dialog.showMessageBox({
+    type: 'info',
+    message: "You're all set",
+    detail: `Press ${prettyHotkey} to draw the gun, then click a window to shoot it.`,
+    buttons: ['OK'],
+  });
 }
 
 const HOTKEY = 'CommandOrControl+Alt+G';
@@ -230,9 +247,7 @@ app.whenReady().then(() => {
     console.warn(`windowsniper: could not register ${HOTKEY} (another app owns it)`);
   }
   log('WindowSniper started', { platform: process.platform, electron: process.versions.electron });
-  if (process.platform === 'darwin' && !canClose()) {
-    systemPreferences.isTrustedAccessibilityClient(true);
-  }
+  if (process.platform === 'darwin' && !canClose()) askForAccess();
   createOverlay();
   if (process.argv.includes('--draw')) drawGun();
 });

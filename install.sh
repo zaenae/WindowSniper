@@ -45,6 +45,19 @@ spin() {
   wait "$pid"
 }
 
+linux_tools_missing() {
+  { command -v xprop >/dev/null && command -v xwininfo >/dev/null && { command -v wmctrl >/dev/null || command -v xdotool >/dev/null; }; } && return 1
+  return 0
+}
+
+linux_install_cmd() {
+  if command -v apt-get >/dev/null; then echo "apt-get install -y x11-utils wmctrl xdotool"
+  elif command -v dnf >/dev/null; then echo "dnf install -y xprop xwininfo wmctrl xdotool"
+  elif command -v pacman >/dev/null; then echo "pacman -S --noconfirm --needed xorg-xprop xorg-xwininfo wmctrl xdotool"
+  elif command -v zypper >/dev/null; then echo "zypper --non-interactive install xprop xwininfo wmctrl xdotool"
+  fi
+}
+
 download() {
   local tmp; tmp=$(mktemp -d)
   if [ -f "$SOURCE" ]; then cp "$SOURCE" "$tmp/src.tar.gz"; else curl -fsSL "$SOURCE" -o "$tmp/src.tar.gz"; fi || return 1
@@ -87,17 +100,33 @@ main() {
   ok "Installed"
   if grep -qs "alias windowsniper=" "$HOME/.zshrc" "$HOME/.bashrc"; then ok "Added the ${BLD}windowsniper${RST} command"; fi
 
+  if [ "$os" = "Linux" ] && linux_tools_missing; then
+    local cmd; cmd=$(linux_install_cmd)
+    if [ -z "$cmd" ]; then
+      note "Install xprop, xwininfo and wmctrl with your package manager so shots can close windows."
+    else
+      printf '\n  WindowSniper needs a few small tools to close windows.\n'
+      local run="$cmd" allowed=1
+      if [ "$(id -u)" != "0" ]; then
+        printf '  Enter your password to install them.\n\n'
+        if sudo -v </dev/tty 2>/dev/null; then run="sudo -n $cmd"; else allowed=; fi
+      fi
+      printf '\n'
+      if [ -n "$allowed" ] && spin "Installing tools" $run </dev/null; then
+        ok "Installed the tools"
+      else
+        note "Shots won't close windows until you run: ${BLD}sudo $cmd${RST}"
+      fi
+    fi
+  fi
+
   spin "Starting WindowSniper" bash "$DEST/WindowSniper.command" </dev/null || fail "WindowSniper didn't start."
   ok "WindowSniper is running"
 
   if [ "$os" = "Darwin" ]; then
-    note "The first time you shoot, macOS asks for Accessibility access: allow ${BLD}Electron${RST}."
-  else
-    local missing=""
-    command -v xprop >/dev/null && command -v xwininfo >/dev/null || missing="x11-utils"
-    command -v wmctrl >/dev/null || command -v xdotool >/dev/null || missing="$missing wmctrl"
-    [ -n "$missing" ] && note "To close windows, also run: ${BLD}sudo apt install ${missing# }${RST}"
-    [ "${XDG_SESSION_TYPE:-}" = "wayland" ] && note "You're on Wayland: only X11 apps can be shot. An Xorg session works best."
+    note "macOS will pop up asking to let ${BLD}Electron${RST} control your computer. Click ${BLD}Open System Settings${RST} and switch it on."
+  elif [ "${XDG_SESSION_TYPE:-}" = "wayland" ]; then
+    note "You're on Wayland: only X11 apps can be shot. An Xorg session works best."
   fi
   printf '\n  Press %s%s%s to draw the gun. Click to shoot, %sEsc%s to put it away.\n' "$BLD" "$hotkey" "$RST" "$BLD" "$RST"
   printf '  Next time, open a new terminal and type %swindowsniper%s.\n\n' "$BLD" "$RST"

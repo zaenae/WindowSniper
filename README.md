@@ -26,10 +26,7 @@ irm https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.ps1 | iex
 
 One line installs everything, Node.js included. Run it again any time to update.
 
-**One more step so shots can close windows:**
-- **Mac:** turn on **Electron** in System Settings → Privacy & Security → Accessibility (older Macs: System Preferences → Security & Privacy → Privacy → Accessibility), then restart WindowSniper.
-- **Linux:** run `sudo apt install x11-utils wmctrl xdotool`. Needs an X11 session, not Wayland.
-- **Windows:** nothing to do.
+If it asks for a permission or your password, say yes. That's what lets it close windows.
 
 Next time, start it with `windowsniper` in a new terminal (Mac/Linux) or from the Start menu (Windows).
 
