@@ -26,7 +26,11 @@ irm https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.ps1 | iex
 
 One line installs everything, Node.js included. Run it again any time to update.
 
-On Mac, click **Open Settings** when asked and turn on **Electron** (the engine WindowSniper runs on). On Linux, enter your password if asked, and on GNOME Wayland (like Ubuntu) log out and back in once. Windows needs nothing.
+**First run**
+- **Mac:** click **Open Settings** when asked and turn on **Electron** (the engine WindowSniper runs on).
+- **Ubuntu / GNOME:** log out and back in once.
+- **Linux:** enter your password if asked.
+- **Windows:** nothing to do.
 
 Next time, start it with `windowsniper` in a new terminal (Mac/Linux) or from the Start menu (Windows).
 
@@ -50,7 +54,8 @@ WindowSniper waits quietly in the background. Press the shortcut anytime, in any
 <summary><b>More</b></summary>
 
 - **Start at login / Quit:** right-click the crosshair in your menu bar or tray.
-- **Shots don't close anything?** On Mac, check that **Electron** is on in System Settings → Privacy & Security → Accessibility. Still stuck? Look at `windowsniper.log` in the WindowSniper folder.
+- **Shots don't close anything?** On Mac, check that **Electron** is on in System Settings → Privacy & Security → Accessibility. On Ubuntu / GNOME, log out and back in once. Still stuck? Look at `windowsniper.log` in the WindowSniper folder.
+- **Prefer a regular app?** Grab one from [Releases](https://github.com/zaenae/WindowSniper/releases/latest): `.dmg` (Mac), `.exe` (Windows), `.deb` or `.rpm` (Linux). If macOS says it's damaged, run `xattr -cr /Applications/WindowSniper.app`.
 - **Tweak it:** gun feel at the top of `gun.html`, health and hotkey at the top of `main.js`.
 
 **Uninstall**
