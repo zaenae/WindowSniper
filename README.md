@@ -14,12 +14,12 @@
 
 ## Install
 
-**Mac / Linux** (Terminal)
+**Mac / Linux** (Terminal) · macOS 10.15+ or Linux with X11
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.sh | bash
 ```
 
-**Windows** (PowerShell)
+**Windows** (PowerShell) · Windows 10+
 ```powershell
 irm https://raw.githubusercontent.com/zaenae/WindowSniper/main/install.ps1 | iex
 ```
@@ -55,7 +55,6 @@ Next time, start it with `windowsniper` in a new terminal (Mac/Linux) or from th
 
 - **Start at login / Quit:** right-click the crosshair in your menu bar or tray.
 - **Uninstall:** untick Start at login, quit, then delete `~/WindowSniper` and the `windowsniper` line in `~/.zshrc` or `~/.bashrc` (Mac/Linux), or `%LOCALAPPDATA%\WindowSniper` and the Start menu shortcut (Windows).
-- **Needs:** macOS 10.15 or newer, Windows 10 or newer, or Linux with X11.
 - **Tweak it:** gun feel at the top of `gun.html`, health and hotkey at the top of `main.js`.
 </details>
 
